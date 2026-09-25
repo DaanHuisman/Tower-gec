@@ -1,0 +1,17 @@
+diff --git a/scorers/ChERRANT/modules/tokenizer.py b/scorers/ChERRANT/modules/tokenizer.py
+index c9653e4..77c718f 100644
+--- a/scorers/ChERRANT/modules/tokenizer.py
++++ b/scorers/ChERRANT/modules/tokenizer.py
+@@ -1,4 +1,3 @@
+-from ltp import LTP
+ from typing import List
+ from pypinyin import pinyin, Style, lazy_pinyin
+ import torch
+@@ -22,6 +21,7 @@ class Tokenizer:
+         """
+         self.ltp = None 
+         if granularity == "word":
++            from ltp import LTP  # local import: char-level scoring does not need ltp
+             self.ltp = LTP(device=torch.device(device) if torch.cuda.is_available() else torch.device("cpu"))
+             self.ltp.add_words(words=["[缺失成分]"], max_window=6)
+         self.segmented = segmented

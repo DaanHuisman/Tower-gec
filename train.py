@@ -1,19 +1,34 @@
-"""Full fine-tune of TowerBase on TowerBlocks (ChatML, loss on assistant turns only)."""
-import argparse, glob, os
+"""Full fine-tune of a Tower model on TowerBlocks (ChatML, loss on assistant turns only).
+
+Baseline: TowerBase-7B on all of TowerBlocks.
+Plan B (GEC): continue TowerInstruct-7B on a fixed TowerBlocks replay sample (--replay_samples)
+plus extra task data (--extra_data), which is always kept in full.
+"""
+import argparse, glob, hashlib, os
 import torch
-from datasets import load_dataset
+from datasets import concatenate_datasets, load_dataset
 from transformers import (AutoModelForCausalLM, AutoTokenizer, Trainer,
                           TrainingArguments, DataCollatorForSeq2Seq)
 
 p = argparse.ArgumentParser()
-p.add_argument("--model", default=os.path.expanduser("~/models/TowerBase-7B"))
-p.add_argument("--data", default=os.path.expanduser("~/data/TowerBlocks/data"))
+# Paths come from config.sh (TG_MODELS / TG_DATA); the fallbacks are the original author's layout.
+MODELS = os.environ.get("TG_MODELS", os.path.expanduser("~/models"))
+DATA = os.environ.get("TG_DATA", os.path.expanduser("~/data/TowerBlocks"))
+p.add_argument("--model", default=os.path.join(MODELS, "TowerBase-7B"))
+p.add_argument("--data", nargs="+", default=[os.path.join(DATA, "data")],
+               help="base data folder(s); only train-*.parquet files are loaded (dev files stay held out)")
+p.add_argument("--extra_data", nargs="*", default=[],
+               help="extra folder(s), e.g. GEC; always used in full, never subsampled or task-filtered. "
+                    "'folder:N' uses every example of that folder N times (upsampling)")
+p.add_argument("--replay_samples", type=int, default=0,
+               help="use a fixed random subset of this many base examples (same subset in every run); 0 = all")
 p.add_argument("--out", required=True)
-p.add_argument("--tasks", default="", help="comma-separated task filter, empty = all")
-p.add_argument("--max_samples", type=int, default=0)
+p.add_argument("--tasks", default="", help="comma-separated task filter on the base data, empty = all")
+p.add_argument("--max_samples", type=int, default=0, help="cap on the final mix, for smoke tests")
 p.add_argument("--max_len", type=int, default=2048)
 p.add_argument("--epochs", type=float, default=4)
 p.add_argument("--lr", type=float, default=7e-6)
+p.add_argument("--warmup_steps", type=int, default=500)
 p.add_argument("--global_bs", type=int, default=256)
 p.add_argument("--micro_bs", type=int, default=4)
 p.add_argument("--seed", type=int, default=42)
@@ -21,7 +36,13 @@ p.add_argument("--dry_run", action="store_true", help="only tokenize + print sta
 a = p.parse_args()
 
 tok = AutoTokenizer.from_pretrained(a.model)
-tok.add_special_tokens({"additional_special_tokens": ["<|im_start|>", "<|im_end|>"], "pad_token": "<pad>"})
+# TowerBase lacks the ChatML tokens; TowerInstruct already has them (and a pad token), so only add
+# what is missing -- otherwise TowerInstruct would get a new token and a resized embedding matrix.
+missing = [t for t in ["<|im_start|>", "<|im_end|>"] if t not in tok.get_vocab()]
+if missing:
+    tok.add_special_tokens({"additional_special_tokens": missing})
+if tok.pad_token is None:
+    tok.add_special_tokens({"pad_token": "<pad>"})
 BOS = tok.bos_token
 
 def encode(ex):
@@ -40,10 +61,36 @@ def encode(ex):
               for i, o in zip(enc["input_ids"], enc["offset_mapping"])]
     return {"input_ids": enc["input_ids"], "attention_mask": enc["attention_mask"], "labels": labels}
 
-ds = load_dataset("parquet", data_files=sorted(glob.glob(f"{a.data}/*.parquet")))["train"]
+def load(dirs):
+    files = [f for d in dirs for f in sorted(glob.glob(f"{os.path.expanduser(d)}/train-*.parquet"))]
+    assert files, f"no train-*.parquet files in {dirs}"
+    print("data files:", *files, sep="\n  ", flush=True)
+    return load_dataset("parquet", data_files=files)["train"]
+
+ds = load(a.data)
 if a.tasks:
     keep = set(a.tasks.split(","))
     ds = ds.filter(lambda t: t in keep, input_columns="task", num_proc=8)
+if a.replay_samples:
+    # Seeded and drawn before any extra data is added, so every run gets the identical replay subset.
+    ds = ds.shuffle(seed=a.seed).select(range(min(a.replay_samples, len(ds))))
+    digest = hashlib.md5("".join(c[0]["value"] for c in ds["conversations"]).encode()).hexdigest()[:12]
+    print(f"replay subset: {len(ds)} examples, md5={digest} (must match across runs)", flush=True)
+def parse_extra(spec):
+    path, sep, n = spec.rpartition(":")
+    return (path, int(n)) if sep and n.isdigit() else (spec, 1)
+
+if a.extra_data:
+    parts = []
+    for spec in a.extra_data:
+        d, n = parse_extra(spec)
+        part = load([d])
+        print(f"  -> {len(part)} examples x{n}", flush=True)
+        parts += [part] * n
+    extra = concatenate_datasets(parts)
+    print(f"base={len(ds)} extra={len(extra)} -> extra is {len(extra) / (len(ds) + len(extra)):.1%} of the mix",
+          flush=True)
+    ds = concatenate_datasets([ds, extra])
 ds = ds.shuffle(seed=a.seed)
 if a.max_samples:
     ds = ds.select(range(min(a.max_samples, len(ds))))
@@ -59,7 +106,8 @@ if a.dry_run:
 
 model = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.bfloat16,
                                              attn_implementation="sdpa")
-model.resize_token_embeddings(len(tok), pad_to_multiple_of=64)
+if len(tok) > model.get_input_embeddings().num_embeddings:
+    model.resize_token_embeddings(len(tok), pad_to_multiple_of=64)
 model.config.pad_token_id = tok.pad_token_id
 model.config.eos_token_id = tok.convert_tokens_to_ids("<|im_end|>")  # paper: EOS overwritten with <|im_end|>
 model.config.use_cache = False
@@ -68,7 +116,7 @@ world = int(os.environ.get("WORLD_SIZE", 1))
 accum = max(1, a.global_bs // (a.micro_bs * world))
 args = TrainingArguments(
     output_dir=a.out, num_train_epochs=a.epochs, learning_rate=a.lr,
-    lr_scheduler_type="cosine", warmup_steps=500, weight_decay=0.01,
+    lr_scheduler_type="cosine", warmup_steps=a.warmup_steps, weight_decay=0.01,
     per_device_train_batch_size=a.micro_bs, gradient_accumulation_steps=accum,
     bf16=True, gradient_checkpointing=True, group_by_length=True,
     fsdp="full_shard auto_wrap",

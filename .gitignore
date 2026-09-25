@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+logs/
+
+# Generated evaluation inputs (rebuilt by setup/4_build_data.sh). gec_eval.jsonl contains MultiGEC text,
+# which must not be redistributed.
+eval/data/
+
+# Model outputs contain the test sources/references (incl. MultiGEC). Only commit score summaries:
+#   results/<run>.summary.txt, results/<run>.gec_summary.txt, results/<run>.gec_scores.json
+results/*.jsonl
+results/gec_work/

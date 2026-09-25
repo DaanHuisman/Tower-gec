@@ -1,0 +1,7 @@
+
+GEC scores for towerinstruct_7b_official
+testset            n   GLEU      P      R   F0.5 unchanged%
+mucgec_dev      1137      -  27.24  14.57  23.20       34.9
+merlin_it_dev     81  58.82  54.95  27.47  45.79        3.7
+
+written to results/towerinstruct_7b_official.gec_scores.json
