@@ -1,0 +1,43 @@
+scoring 37669 segments from /gpfs/home1/scur0531/tower-gec/results/gec_zh.jsonl
+
+Per language pair:
+testset    lp           n  COMET-22    chrF
+flores200  de-en     1012     89.41   68.72
+flores200  en-de     1012     87.71   63.34
+flores200  en-es     1012     86.75   55.85
+flores200  en-fr     1012     88.34   69.15
+flores200  en-it     1012     88.74   59.25
+flores200  en-ko     1012     89.36   35.10
+flores200  en-nl     1012     88.26   58.20
+flores200  en-pt     1012     89.42   67.70
+flores200  en-ru     1012     89.37   57.32
+flores200  en-zh     1012     87.58   35.38
+flores200  es-en     1012     87.41   61.29
+flores200  fr-en     1012     89.48   69.32
+flores200  it-en     1012     88.30   63.40
+flores200  ko-en     1012     88.00   58.43
+flores200  nl-en     1012     87.65   60.63
+flores200  pt-en     1012     89.89   72.99
+flores200  ru-en     1012     86.83   63.14
+flores200  zh-en     1012     86.98   58.03
+tico19     en-es     2100     88.25   72.70
+tico19     en-fr     2100     81.49   64.12
+tico19     en-pt     2100     89.24   70.76
+tico19     en-ru     2100     87.84   58.30
+tico19     en-zh     2100     87.74   43.11
+wmt23      de-en      549     85.10   67.49
+wmt23      en-de      557     82.77   64.44
+wmt23      en-ru     2074     84.69   53.44
+wmt23      en-zh     2074     84.87   36.97
+wmt23      ru-en     1723     82.82   58.58
+wmt23      zh-en     1976     80.26   50.17
+
+Aggregated by direction (COMET-22), vs. paper's TowerInstruct-7B (Table 1):
+testset    dir           n     ours    paper   delta
+flores200  en->xx     9108    88.39    88.51   -0.12
+flores200  xx->en     9108    88.22    88.27   -0.05
+tico19     en->xx    10500    86.91    87.01   -0.10
+wmt23      en->xx     4705    84.54    84.28   +0.26
+wmt23      xx->en     4248    81.92    82.77   -0.85
+
+per-segment scores written to /gpfs/home1/scur0531/tower-gec/results/gec_zh.scored.jsonl

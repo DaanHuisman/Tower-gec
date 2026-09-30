@@ -1,0 +1,136 @@
+TOWER GEC EXPERIMENTS - RESULTS
+====================================================================================================
+Generated 2026-09-26 from the result files in tower-gec/results/ (repo commit 13d5dda).
+Every number below is read directly from those files; section 6 lists how they were verified.
+
+1. WHAT WAS RUN
+----------------------------------------------------------------------------------------------------
+Question: if GEC data is added to TowerInstruct-7B's training mix, does GEC improve, and at what cost
+to translation?
+
+All three runs continue training the released TowerInstruct-7B-v0.1 for 2 epochs on the SAME fixed
+30,000-example TowerBlocks replay subset (fingerprint md5=beea7a1bfd76). They differ only in the GEC data
+added on top. Learning rate 2e-6 (cosine, 20 warmup steps), batch 256, full fine-tune on 4x H100.
+
+  official  TowerInstruct-7B-v0.1 as released, no extra training (the baseline)
+  control   + replay only                                  -> effect of extra training by itself
+  it        + replay + Italian GEC (MultiGEC MERLIN, 651 essays)
+  zh        + replay + Chinese GEC (MuCGEC Lang-8/HSK, 2,610 sentence pairs, token-matched to Italian)
+  (it+zh, both languages together, was not run.)
+
+Test sets: GEC - Italian MultiGEC-2025 dev (81 essays, held out of training), Chinese MuCGEC dev
+(1,137 sentences, multiple references). MT - FLORES-200 devtest, WMT23, TICO-19 (37,669 segments).
+Metrics: official scorers - MultiGEC-2025 GLEU + ERRANT P/R/F0.5 (Italian), ChERRANT char-level
+P/R/F0.5 (Chinese); COMET-22 (wmt22-comet-da) + chrF for MT. Greedy decoding.
+
+2. GEC RESULTS
+----------------------------------------------------------------------------------------------------
+P = precision, R = recall, 'unch.' = % of test inputs the model returned unchanged.
+
+run      |         ITALIAN (81 essays)          |    CHINESE (1,137 sentences)     
+         |   GLEU      P      R    F0.5   unch. |      P      R    F0.5    unch.
+official |  58.82  54.95  27.47   45.79    3.7% |  27.24  14.57   23.20    34.9%
+control  |  56.54  54.66  24.39   43.79    7.4% |  26.04  16.79   23.45    30.0%
+it       |  72.76  58.96  47.92   56.36    0.0% |  27.72  20.90   26.02    18.6%
+zh       |  56.85  57.80  23.39   44.66    3.7% |  42.49  11.76   27.90    40.2%
+
+Change vs official:
+  control  Italian: GLEU  -2.27  P  -0.29  R  -3.08  F0.5  -2.00   |  Chinese: P  -1.20  R  +2.22  F0.5  +0.25
+  it       Italian: GLEU +13.95  P  +4.01  R +20.45  F0.5 +10.57   |  Chinese: P  +0.48  R  +6.33  F0.5  +2.82
+  zh       Italian: GLEU  -1.96  P  +2.85  R  -4.08  F0.5  -1.13   |  Chinese: P +15.25  R  -2.81  F0.5  +4.70
+
+Change vs control:
+  it       Italian: GLEU +16.22  P  +4.30  R +23.53  F0.5 +12.57   |  Chinese: P  +1.68  R  +4.11  F0.5  +2.57
+  zh       Italian: GLEU  +0.31  P  +3.14  R  -1.00  F0.5  +0.87   |  Chinese: P +16.45  R  -5.03  F0.5  +4.45
+
+3. TRANSLATION RESULTS (COMET-22, higher is better)
+----------------------------------------------------------------------------------------------------
+testset   direction   official   control        it        zh  it-control  zh-control
+flores200 en->xx         88.45     88.34     88.36     88.39       +0.02       +0.05
+flores200 xx->en         88.27     88.21     88.21     88.22       +0.00       +0.01
+tico19    en->xx         86.98     86.88     86.90     86.91       +0.02       +0.03
+wmt23     en->xx         84.64     84.42     84.43     84.54       +0.01       +0.12
+wmt23     xx->en         81.91     81.85     81.86     81.92       +0.01       +0.07
+
+Language pairs involving Italian or Chinese (COMET-22 / chrF):
+testset   pair         n        official         control              it              zh
+flores200 en-it     1012    88.76 / 59.1    88.67 / 59.1    88.74 / 59.2    88.74 / 59.2
+flores200 en-zh     1012    87.69 / 35.4    87.54 / 34.8    87.49 / 34.8    87.58 / 35.4
+flores200 it-en     1012    88.36 / 63.5    88.31 / 63.5    88.32 / 63.4    88.30 / 63.4
+flores200 zh-en     1012    87.03 / 58.0    86.88 / 57.7    86.90 / 57.8    86.98 / 58.0
+tico19    en-zh     2100    87.76 / 43.1    87.62 / 42.4    87.67 / 42.5    87.74 / 43.1
+wmt23     en-zh     2074    85.02 / 37.8    84.60 / 36.1    84.64 / 36.0    84.87 / 37.0
+wmt23     zh-en     1976    80.17 / 50.1    80.17 / 50.0    80.19 / 50.1    80.26 / 50.2
+(Per-pair numbers for all 29 language pairs are in the *.summary.txt files.)
+
+4. MAIN FINDINGS
+----------------------------------------------------------------------------------------------------
+* Italian GEC improves strongly with Italian GEC data: F0.5 45.79 -> 56.36 (+10.6 vs official, +12.6 vs control),
+  GLEU 58.82 -> 72.76 (+13.9 vs official).
+  Mostly recall: 24.4 -> 47.9 (vs control), with precision also up.
+* Chinese GEC improves with Chinese GEC data: F0.5 23.20 -> 27.90 (+4.7 vs official, +4.5 vs control),
+  but by becoming more conservative:
+  precision 26.0 -> 42.5, recall 16.8 -> 11.8, unchanged outputs 30% -> 40% (vs control).
+* Cross-lingual: Italian GEC data also raises Chinese F0.5 by +2.6 vs control (the model edits more:
+  19% of Chinese inputs unchanged vs 30%). Chinese GEC data changes Italian F0.5 by +0.9
+  vs control - too small to call without a significance test.
+* Extra training alone (control) changes Italian F0.5 by -2.0 vs official, so control is
+  the fairer comparison point for the GEC runs.
+* No measurable translation cost from GEC data: in the aggregated scores (section 3, first table) the GEC
+  runs are within 0.12 COMET of control on every test set and direction. The small drop vs official
+  (<= 0.22 aggregated; up to 0.42 for WMT23 en-zh) appears in control too, i.e. it comes from the extra
+  training, not from the GEC data.
+
+5. CAVEATS
+----------------------------------------------------------------------------------------------------
+* One training run per condition. GPU training is not bit-for-bit deterministic: two identical smoke runs
+  differed by 0.40 F0.5 (Italian) and 0.28 F0.5 (Chinese). Differences of ~1 point or less, and all MT
+  differences here, should be treated as noise. No significance test (e.g. bootstrap) has been run yet.
+* The Italian test set is small (81 essays).
+* The it+zh run (can one model learn both?) was not run.
+* Not measured: whether GEC training makes the model silently 'fix' errors in the source when translating.
+* Chinese scores: ChERRANT scores the references against themselves at F0.5 99.94, not 100 (Italian: exactly
+  100). The gap most likely comes from a newer OpenCC version; it shifts absolute Chinese scores by ~0.1 at
+  most and equally for all runs.
+
+6. PROVENANCE AND VERIFICATION
+----------------------------------------------------------------------------------------------------
+Slurm jobs (sacct):
+  official   27020296  tower-eval  COMPLETED   01:22:18  started 2026-09-22T13:50:50
+  official   27177285  tower-eval  COMPLETED   00:13:41  started 2026-09-25T13:59:32
+  control    27181663  tower-gec   COMPLETED   00:32:46  started 2026-09-25T17:58:52
+  control    27181664  tower-eval  COMPLETED   01:29:53  started 2026-09-25T18:31:52
+  it         27181665  tower-gec   COMPLETED   00:33:30  started 2026-09-25T17:58:52
+  it         27181666  tower-eval  COMPLETED   01:29:44  started 2026-09-25T18:34:31
+  zh         27181667  tower-gec   COMPLETED   00:34:06  started 2026-09-25T17:58:52
+  zh         27181668  tower-eval  COMPLETED   01:29:52  started 2026-09-25T18:34:31
+
+Training logs (logs/tower-gec_<job>.out):
+  control  replay md5=beea7a1bfd76  GEC examples=   0 (0.0% of mix)  total examples=29968
+           tokens=17,834,458  epochs=2.0  mean train loss=0.4530
+  it       replay md5=beea7a1bfd76  GEC examples= 651 (2.1% of mix)  total examples=30619
+           tokens=18,149,178  epochs=2.0  mean train loss=0.4508
+  zh       replay md5=beea7a1bfd76  GEC examples=2610 (8.0% of mix)  total examples=32578
+           tokens=18,189,880  epochs=2.0  mean train loss=0.4524
+
+Checks performed on 2026-09-26 (all passed):
+  [ok] GEC: all four runs re-scored from scratch from the raw model outputs (*.gec.jsonl) with the official
+       scorers in a separate directory -> all 48 reported numbers reproduced exactly (max diff 0.000000).
+  [ok] MT: COMET-22 and chrF recomputed for every (run, test set, language pair) from the raw outputs
+       (*.scored.jsonl) -> 116 cells match the summaries (max diff 0.005 = rounding).
+  [ok] MT: COMET-22 re-run on a CPU node for 30 random segments per run (120 total) -> matches the stored
+       per-segment scores (max diff 0.0001).
+  [ok] The models are genuinely different: 30-57% of translations differ between any two runs.
+  [ok] Same replay subset in all runs (md5=beea7a1bfd76 in every training log).
+  [ok] The official baseline was evaluated with the same code: its MT eval (22 Sep) used generate.py /
+       score.py / prepare_data.py identical to git commit 24d9337 (23 Sep) and to the current repo; its GEC
+       eval used the current scripts (only path settings differ). Test sets are byte-identical. Its MT
+       scores match the Tower paper (FLORES en->xx 88.45 vs 88.51 reported).
+  [ok] setup/verify.py (re-run 2026-09-26): all raw data files, built GEC training sets, test sets and the
+       replay subset match the recorded fingerprints.
+
+Files (tower-gec/results/):
+  <run>.gec_summary.txt / .gec_scores.json   GEC scores          <run>.summary.txt   MT scores
+  <run>.gec.jsonl / <run>.jsonl               raw model outputs (NOT in git: they contain MultiGEC text)
+  reference/                                   official TowerInstruct-7B scores
+To re-check GEC scores yourself: $TG_SCORERS/venv/bin/python eval/score_gec.py --hyp results/<run>.gec.jsonl

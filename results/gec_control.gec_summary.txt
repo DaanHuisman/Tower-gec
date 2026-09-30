@@ -1,0 +1,7 @@
+
+GEC scores for gec_control
+testset            n   GLEU      P      R   F0.5 unchanged%
+mucgec_dev      1137      -  26.04  16.79  23.45       30.0
+merlin_it_dev     81  56.54  54.66  24.39  43.79        7.4
+
+written to /gpfs/home1/scur0531/tower-gec/results/gec_control.gec_scores.json

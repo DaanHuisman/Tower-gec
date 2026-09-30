@@ -1,0 +1,22 @@
+{
+  "mucgec_dev": {
+    "metric": "ChERRANT char",
+    "n": 1137,
+    "TP": 851,
+    "FP": 2219,
+    "FN": 3220,
+    "P": 27.72,
+    "R": 20.9,
+    "F0.5": 26.02,
+    "unchanged_pct": 18.557607739665787
+  },
+  "merlin_it_dev": {
+    "metric": "MultiGEC-2025 GLEU + ERRANT",
+    "n": 81,
+    "GLEU": 72.762,
+    "P": 58.96,
+    "R": 47.92,
+    "F0.5": 56.36,
+    "unchanged_pct": 0.0
+  }
+}
