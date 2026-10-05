@@ -1,0 +1,7 @@
+
+GEC scores for gec_it_zh
+testset            n   GLEU      P      R   F0.5 unchanged%
+mucgec_dev      1137      -  41.92  12.37  28.37       39.6
+merlin_it_dev     81  71.76  58.18  46.70  55.45        0.0
+
+written to /gpfs/home4/scur0549/tower-gec/results/gec_it_zh.gec_scores.json
