@@ -1,0 +1,16 @@
+diff --git a/scripts/local_eval/gleu_errant/utils_transform_markdown_to_one_essay_per_line.py b/scripts/local_eval/gleu_errant/utils_transform_markdown_to_one_essay_per_line.py
+index 8136b65..aa74f37 100644
+--- a/scripts/local_eval/gleu_errant/utils_transform_markdown_to_one_essay_per_line.py
++++ b/scripts/local_eval/gleu_errant/utils_transform_markdown_to_one_essay_per_line.py
+@@ -115,9 +115,9 @@ def process_corpus_files(orig_folder, sub_folder, corpus_name, split, copy_sub1=
+         
+         for i in range(n_subs):
+             if "fluency" in sub_file:  # preserve "fluency" in the .tmp filename (for track parsing in the scoring script)
+-                sub_file_name = os.path.join(sub_folder, f"{corpus_name}-fluency-hypo{i+1}-{split}.tmp").lower()  # the output .tmp filename, lowercased
++                sub_file_name = os.path.join(sub_folder, f"{corpus_name}-fluency-hypo{i+1}-{split}.tmp".lower())  # the output .tmp filename, lowercased
+             else:
+-                sub_file_name = os.path.join(sub_folder, f"{corpus_name}-hypo{i+1}-{split}.tmp").lower()  # the output .tmp filename, lowercased
++                sub_file_name = os.path.join(sub_folder, f"{corpus_name}-hypo{i+1}-{split}.tmp".lower())  # the output .tmp filename, lowercased
+             print(f"Writing to {sub_file_name}")
+             if os.path.exists(sub_file_name):
+                 os.remove(sub_file_name)  # remove any existing files to prevent over-accumulation of data

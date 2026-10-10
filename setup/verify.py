@@ -43,6 +43,12 @@ EVAL_MD5 = {  # eval/data, built by setup/4_build_data.sh
     "gec_eval.jsonl": ("e16598f3f7d34420e7a55e50bac235b1", True),
     # FLORES/WMT23/TICO come from external mirrors; a mismatch is a warning, not an error.
     "eval_data.jsonl": ("281dabac62b13419256362e7d776055a", False),
+    # TowerEval-Data at a pinned revision
+    "tasks_eval.jsonl": ("eff2a0c457844f0d31d95e6e76427447", True),
+    "gec_paper_eval.jsonl": ("adb0c2152ee5372ed44f3c499bd0b7d8", True),
+    "gec_paper_ref/conll14.en.m2": ("3667b3c1e5bc93317ff60733f9a86bb3", True),
+    "gec_paper_ref/fm.de.m2": ("a045c3500247b38283d24810b6c90f85", True),
+    "gec_paper_ref/cowsl2h.es.m2": ("51ec0f350506cc7680be8ead8b3da09f", True),
 }
 REPLAY_MD5 = "beea7a1bfd76"
 
@@ -108,6 +114,9 @@ for rel in ["TowerInstruct-7B/model-00006-of-00006.safetensors", "TowerInstruct-
     report("OK" if os.path.exists(os.path.join(MODELS, rel)) else "MISSING", f"{MODELS}/{rel}")
 report("OK" if os.path.exists(os.path.join(SCORERS, "venv", "bin", "errant_parallel")) else "MISSING",
        f"{SCORERS} (GEC scorers)", "" if os.path.exists(SCORERS) else "run setup/3_scorers.sh")
+report("OK" if os.path.exists(os.path.join(SCORERS, "errant-venv", "bin", "errant_compare")) else "MISSING",
+       f"{SCORERS}/errant-venv (official ERRANT)", "" if os.path.exists(os.path.join(SCORERS, "errant-venv"))
+       else "run setup/3b_errant.sh")
 
 print("TowerBlocks replay subset (train.py dry run)")
 if os.path.exists(os.path.join(DATA, "data", "train-00003-of-00004.parquet")) and \

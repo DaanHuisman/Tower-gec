@@ -1,0 +1,16 @@
+scoring 4470 outputs from ../results/towerinstruct_7b_official.gec_paper.jsonl
+scored en
+scored de
+scored es
+
+GEC on the Tower paper's test sets (5-shot prompts). Paper = TowerInstruct-7B in the Tower paper.
+Edit rate = TER against the reference, lower is better; 'no edits' = the uncorrected source.
+lang  testset       n edit rate  (paper)  no edits  (paper)  ERRANT P      R   F0.5  unch.%
+en    conll14    1312     13.33    13.39     13.75    13.75     56.61  20.45  41.82    69.2
+de    fm         2337     14.60    14.77     18.23    18.23     61.58  32.55  52.26    43.5
+es    cowsl2h     821     15.39    17.23     18.00    18.00     51.76  23.25  41.56    61.6
+avg                       14.44    15.13                                      45.21   (paper ERRANT F0.5 average: 42.00)
+
+0 outputs had text after a newline (cut off before scoring, as tower-eval does)
+per-sentence outputs written to ../results/towerinstruct_7b_official.gec_paper.scored.jsonl
+aggregate scores written to ../results/towerinstruct_7b_official.gec_paper_scores.json

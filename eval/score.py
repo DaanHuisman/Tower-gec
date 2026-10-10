@@ -1,8 +1,3 @@
-"""Score a generate.py output file with COMET-22 (Unbabel/wmt22-comet-da) and chrF,
-aggregate by (testset, direction) and (testset, language pair), and print alongside
-the TowerInstruct-7B numbers reported in Table 1 of the Tower paper (arXiv:2402.17733)
-for a direct sanity check.
-"""
 import argparse
 import json
 from collections import defaultdict

@@ -1,0 +1,26 @@
+scoring 15953 outputs from results/gec_it.tasks.jsonl
+
+APE (WMT23 test, NLLB-3.3B translations), post-edit vs. the unedited NLLB output:
+lp         n  COMET-22  (nllb)    chrF  (nllb)     TER  (nllb)  unch.%
+de-en    549     82.56   79.92   59.85   57.26   56.49   56.83    72.3
+en-de    557     81.66   77.87   60.92   56.22   55.51   60.00    40.6
+en-ru   2074     83.99   82.93   54.03   53.25   61.46   62.23    70.8
+en-zh   2074     84.24   75.72   38.36   26.26   46.67   60.25     6.3
+ru-en   1723     80.92   80.05   55.94   55.52   59.19   58.72    87.6
+zh-en   1976     77.66   76.44   46.39   46.10   79.50   75.63    78.8
+avg              81.84   78.82   52.58   49.10   59.80   62.27
+
+NER (MultiCoNER II test), entity-level F1 over the 6 coarse types:
+lang       n       P       R      F1  unparsable  wrong len
+de      1000   79.68   76.08   77.84           0          9
+en      1000   75.14   71.86   73.46           2         10
+es      1000   76.52   71.64   74.00           0         10
+fr      1000   73.48   67.58   70.41           1         11
+it      1000   76.52   73.44   74.94           0          9
+pt      1000   74.54   69.98   72.19           0         11
+zh      1000   55.03   51.87   53.40           0         39
+avg                            70.89
+
+2 outputs had text after a newline (cut off before scoring, as tower-eval does)
+per-segment scores written to results/gec_it.tasks.scored.jsonl
+aggregate scores written to results/gec_it.tasks_scores.json

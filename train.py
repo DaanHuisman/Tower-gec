@@ -31,13 +31,13 @@ p.add_argument("--lr", type=float, default=7e-6)
 p.add_argument("--warmup_steps", type=int, default=500)
 p.add_argument("--global_bs", type=int, default=256)
 p.add_argument("--micro_bs", type=int, default=4)
-p.add_argument("--seed", type=int, default=42)
+p.add_argument("--seed", type=int, default=42, help="training seed: data order and Trainer")
+p.add_argument("--replay_seed", type=int, default=42,
+               help="seed that draws the replay subset; keep it fixed so --seed only changes the data order")
 p.add_argument("--dry_run", action="store_true", help="only tokenize + print stats")
 a = p.parse_args()
 
 tok = AutoTokenizer.from_pretrained(a.model)
-# TowerBase lacks the ChatML tokens; TowerInstruct already has them (and a pad token), so only add
-# what is missing -- otherwise TowerInstruct would get a new token and a resized embedding matrix.
 missing = [t for t in ["<|im_start|>", "<|im_end|>"] if t not in tok.get_vocab()]
 if missing:
     tok.add_special_tokens({"additional_special_tokens": missing})
@@ -73,7 +73,7 @@ if a.tasks:
     ds = ds.filter(lambda t: t in keep, input_columns="task", num_proc=8)
 if a.replay_samples:
     # Seeded and drawn before any extra data is added, so every run gets the identical replay subset.
-    ds = ds.shuffle(seed=a.seed).select(range(min(a.replay_samples, len(ds))))
+    ds = ds.shuffle(seed=a.replay_seed).select(range(min(a.replay_samples, len(ds))))
     digest = hashlib.md5("".join(c[0]["value"] for c in ds["conversations"]).encode()).hexdigest()[:12]
     print(f"replay subset: {len(ds)} examples, md5={digest} (must match across runs)", flush=True)
 def parse_extra(spec):
@@ -96,7 +96,7 @@ if a.max_samples:
     ds = ds.select(range(min(a.max_samples, len(ds))))
 ds = ds.map(encode, remove_columns=ds.column_names, num_proc=16, desc="tokenize")
 ds = ds.filter(lambda l: any(x != -100 for x in l), input_columns="labels", num_proc=8)
-print(f"examples={len(ds)} tokens={sum(len(x) for x in ds['input_ids']):,}", flush=True)
+print(f"examples={len(ds)} tokens={sum(len(x) for x in ds['input_ids']):,} seed={a.seed}", flush=True)
 if a.dry_run:
     ex = ds[0]
     print(tok.decode(ex["input_ids"])[:600])

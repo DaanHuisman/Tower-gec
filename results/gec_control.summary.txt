@@ -1,4 +1,4 @@
-scoring 37669 segments from /gpfs/home1/scur0531/tower-gec/results/gec_control.jsonl
+scoring 37669 segments from results/gec_control.jsonl
 
 Per language pair:
 testset    lp           n  COMET-22    chrF
@@ -40,4 +40,4 @@ tico19     en->xx    10500    86.88    87.01   -0.13
 wmt23      en->xx     4705    84.42    84.28   +0.14
 wmt23      xx->en     4248    81.85    82.77   -0.92
 
-per-segment scores written to /gpfs/home1/scur0531/tower-gec/results/gec_control.scored.jsonl
+per-segment scores written to results/gec_control.scored.jsonl

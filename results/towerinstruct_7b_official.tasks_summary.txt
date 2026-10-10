@@ -1,0 +1,26 @@
+scoring 15953 outputs from results/towerinstruct_7b_official.tasks.jsonl
+
+APE (WMT23 test, NLLB-3.3B translations), post-edit vs. the unedited NLLB output:
+lp         n  COMET-22  (nllb)    chrF  (nllb)     TER  (nllb)  unch.%
+de-en    549     80.90   79.92   53.89   57.26   61.74   56.83    75.2
+en-de    557     80.86   77.87   59.13   56.22   56.63   60.00    46.9
+en-ru   2074     83.86   82.93   53.82   53.25   61.71   62.23    75.3
+en-zh   2074     83.41   75.72   37.09   26.26   48.18   60.25    14.0
+ru-en   1723     80.86   80.05   55.86   55.52   59.29   58.72    90.4
+zh-en   1976     77.32   76.44   46.19   46.10   77.94   75.63    85.8
+avg              81.20   78.82   51.00   49.10   60.91   62.27
+
+NER (MultiCoNER II test), entity-level F1 over the 6 coarse types:
+lang       n       P       R      F1  unparsable  wrong len
+de      1000   78.37   77.72   78.05           0          9
+en      1000   75.51   73.29   74.38           2          8
+es      1000   75.97   72.73   74.32           0          8
+fr      1000   72.75   68.95   70.80           1         10
+it      1000   75.86   74.74   75.30           0          7
+pt      1000   74.95   72.13   73.51           1          6
+zh      1000   53.82   52.24   53.02           1         30
+avg                            71.34
+
+0 outputs had text after a newline (cut off before scoring, as tower-eval does)
+per-segment scores written to results/towerinstruct_7b_official.tasks.scored.jsonl
+aggregate scores written to results/towerinstruct_7b_official.tasks_scores.json

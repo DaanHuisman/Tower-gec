@@ -6,6 +6,8 @@
 #   $TG_DATA/gec_zh/train-gec_zh_mucgec.parquet         2610 Chinese pairs (MuCGEC, token-matched sample)
 #   eval/data/gec_eval.jsonl                            81 Italian essays + 1137 Chinese sentences
 #   eval/data/eval_data.jsonl                           FLORES-200 + WMT23 + TICO-19 (MT)
+#   eval/data/tasks_eval.jsonl                          APE (WMT23) + NER (MultiCoNER II), from TowerEval-Data
+#   eval/data/gec_paper_eval.jsonl + gec_paper_ref/     the Tower paper's GEC sets (en/de/es), from TowerEval-Data
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source ./config.sh
@@ -20,4 +22,9 @@ if [ -e data/eval_data.jsonl ]; then
     echo "[skip] eval/data/eval_data.jsonl already exists"
 else
     "$PY" prepare_data.py
+fi
+if [ -e data/tasks_eval.jsonl ] && [ -e data/gec_paper_eval.jsonl ]; then
+    echo "[skip] eval/data/tasks_eval.jsonl and gec_paper_eval.jsonl already exist"
+else
+    "$PY" prepare_tasks_data.py
 fi

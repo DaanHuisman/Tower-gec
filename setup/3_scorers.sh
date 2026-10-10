@@ -6,6 +6,8 @@
 #     + patches/cherrant_char_level_without_ltp.patch: moves `from ltp import LTP` into the word-level
 #       branch. Char-level scoring never uses LTP, so scores are unchanged; this avoids installing ltp.
 #   MultiGEC-2025 GLEU + ERRANT (Italian)     github.com/spraakbanken/multigec-2025      @ a9aa8b5
+#     + patches/multigec_lowercase_filename_only.patch: lowercases only the hypothesis .tmp filename, not
+#       its whole path, so scoring works when the repo path has capitals. Scores are unchanged.
 #     + its ERRANT / spacy_conll forks        github.com/cainesap/{errant,spacy_conll}   @ 16d835e / bd3e49f
 #     + UDPipe Italian model
 # If $TG_SCORERS/venv already exists, nothing is changed.
@@ -36,6 +38,12 @@ else
 fi
 
 clone_at https://github.com/spraakbanken/multigec-2025.git "$TG_SCORERS/multigec-2025" a9aa8b5a9eef95e1d47e305e838a5837096d6340
+PATCH="$TG_ROOT/patches/multigec_lowercase_filename_only.patch"
+if git -C "$TG_SCORERS/multigec-2025" apply --reverse --check "$PATCH" 2>/dev/null; then
+    echo "[skip] MultiGEC already patched"
+else
+    git -C "$TG_SCORERS/multigec-2025" apply "$PATCH"
+fi
 G="$TG_SCORERS/multigec-2025/scripts/local_eval/gleu_errant"
 clone_at https://github.com/cainesap/errant "$G/errant" 16d835e471d729b18d474aa085b1f6cc89e3fab0
 clone_at https://github.com/cainesap/spacy_conll "$G/spacy_conll" bd3e49f52684e7f0b3347b98b1f466083d665645

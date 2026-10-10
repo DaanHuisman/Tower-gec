@@ -73,7 +73,7 @@ wmt23     zh-en     1976    80.17 / 50.1    80.17 / 50.0    80.19 / 50.1    80.2
   precision 26.0 -> 42.5, recall 16.8 -> 11.8, unchanged outputs 30% -> 40% (vs control).
 * Cross-lingual: Italian GEC data also raises Chinese F0.5 by +2.6 vs control (the model edits more:
   19% of Chinese inputs unchanged vs 30%). Chinese GEC data changes Italian F0.5 by +0.9
-  vs control - too small to call without a significance test.
+  vs control - not significant (paired bootstrap p = .48, see SIGNIFICANCE.md).
 * Extra training alone (control) changes Italian F0.5 by -2.0 vs official, so control is
   the fairer comparison point for the GEC runs.
 * No measurable translation cost from GEC data: in the aggregated scores (section 3, first table) the GEC
@@ -85,7 +85,9 @@ wmt23     zh-en     1976    80.17 / 50.1    80.17 / 50.0    80.19 / 50.1    80.2
 ----------------------------------------------------------------------------------------------------
 * One training run per condition. GPU training is not bit-for-bit deterministic: two identical smoke runs
   differed by 0.40 F0.5 (Italian) and 0.28 F0.5 (Chinese). Differences of ~1 point or less, and all MT
-  differences here, should be treated as noise. No significance test (e.g. bootstrap) has been run yet.
+  differences here, should be treated as noise. The paired bootstrap tests in SIGNIFICANCE.md (added
+  2026-10-09) only cover which test sentences were sampled, not this run-to-run variation, so a small
+  difference can be significant there and still be training noise.
 * The Italian test set is small (81 essays).
 * The it+zh run (can one model learn both?) was not run.
 * Not measured: whether GEC training makes the model silently 'fix' errors in the source when translating.

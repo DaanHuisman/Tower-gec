@@ -28,4 +28,5 @@ torchrun --standalone --nproc_per_node=4 train.py \
     --extra_data ${EXTRA_DATA:-} \
     --epochs "${EPOCHS:-2}" \
     --lr "${LR:-2e-6}" \
-    --warmup_steps "${WARMUP:-20}"
+    --warmup_steps "${WARMUP:-20}" \
+    --seed "${SEED:-42}"

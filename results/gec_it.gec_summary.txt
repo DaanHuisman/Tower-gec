@@ -4,4 +4,4 @@ testset            n   GLEU      P      R   F0.5 unchanged%
 mucgec_dev      1137      -  27.72  20.90  26.02       18.6
 merlin_it_dev     81  72.76  58.96  47.92  56.36        0.0
 
-written to /gpfs/home1/scur0531/tower-gec/results/gec_it.gec_scores.json
+written to results/gec_it.gec_scores.json

@@ -23,10 +23,21 @@ its existing tasks). The only difference between runs is the GEC data added on t
 | `gec_it_zh` | replay + both | Can one model learn both? Do they interfere? |
 | official TowerInstruct-7B | no extra training | Reference point |
 
+`gec_it_zh` was evaluated on GEC (own dev sets) and translation only (`results/gec_it_zh.*`). It was not
+run on Tower's other tasks or the paper's GEC sets, and it is not in the significance tests.
+
 Every model is evaluated on:
 - **GEC:** Italian MultiGEC-2025 dev (81 essays; GLEU and ERRANT P/R/F0.5) and Chinese MuCGEC dev
   (1,137 sentences; ChERRANT P/R/F0.5). Both use the official scorers.
 - **Translation:** FLORES-200, WMT23 and TICO-19 (COMET-22 and chrF). This is where a cost would show up.
+- **Tower's other tasks** (separate suite, `./submit.sh tasks`): automatic post-editing of NLLB-3.3B
+  translations of WMT23 (6 language pairs; COMET-22, chrF, TER) and named-entity recognition on
+  MultiCoNER II (7 languages; entity F1). Data and prompts are TowerEval-Data-v0.1, the set the Tower
+  paper uses, and scoring follows tower-eval.
+- **The Tower paper's own GEC sets** (separate suite, `./submit.sh gec_paper`): English CoNLL-2014,
+  German Falko-MERLIN and Spanish COWSL2H with the paper's 5-shot prompts, scored with edit rate
+  (TER against the reference) and official ERRANT. These show whether Italian/Chinese GEC training
+  carries over to GEC in other languages.
 
 Training settings: 2 epochs, learning rate 2e-6 with cosine decay and 20 warmup steps, batch size 256,
 full fine-tune on 4 H100s (about 1–1.5 h per run). The loss covers only the assistant turns.
@@ -51,6 +62,7 @@ git clone <this repo> tower-gec && cd tower-gec
 bash setup/1_env.sh          # Python 3.9 venv with pinned packages               (~10 min)
 bash setup/2_download.sh     # TowerInstruct-7B, TowerBlocks, MuCGEC, COMET-22     (~15 min, 28 GB)
 bash setup/3_scorers.sh      # ChERRANT + MultiGEC scorers in a Python 3.12 venv    (~10 min)
+bash setup/3b_errant.sh      # official ERRANT for the paper's GEC sets, own venv   (~1 min)
 bash setup/4_build_data.sh   # GEC training sets + evaluation sets                  (~2 min)
 source config.sh && $TG_ENV/bin/python setup/verify.py
 ```
@@ -73,7 +85,7 @@ export the variable before running anything, e.g. `export TG_MODELS=/scratch-sha
 | `TG_DATA` | `~/data/TowerBlocks` | TowerBlocks, MuCGEC, MultiGEC, built GEC sets (1.2 GB) |
 | `TG_MODELS` | `~/models` | TowerInstruct-7B (26 GB), TowerBase-7B tokenizer |
 | `TG_ENV` | `~/tower-env` | training/eval venv |
-| `TG_SCORERS` | `~/gec-scorers` | GEC scorers + their venv |
+| `TG_SCORERS` | `~/gec-scorers` | GEC scorers + their venvs |
 | `TG_RUNS` | `/scratch-shared/$USER/runs` | trained models, about 51 GB each |
 | `HF_HOME` | `/scratch-shared/$USER/hf_cache` | Hugging Face cache |
 
@@ -106,6 +118,14 @@ The real experiments:
 ./submit.sh train it                  # control | it | zh | it_zh
 ./submit.sh eval gec_it               # mt | gec | mt,gec (default)
 
+# Tower's other tasks (APE + NER) for official, gec_control, gec_it and gec_zh (~1.5 h each):
+./submit.sh tasks
+./submit.sh gec_paper                      # the paper's GEC sets (en/de/es) for the same four (~30 min each)
+$TG_ENV/bin/python eval/compare_tasks.py   # side-by-side tables once the jobs are done
+
+# paired bootstrap significance tests for every comparison (CPU, ~1 min, after the evals above):
+$TG_SCORERS/venv/bin/python eval/significance.py   # -> results/SIGNIFICANCE.md + significance.json
+
 # hyperparameter overrides for exploratory runs (use a different name so results don't mix):
 REPLAY=20000 EPOCHS=1 ./submit.sh train it
 ```
@@ -115,6 +135,10 @@ REPLAY=20000 EPOCHS=1 ./submit.sh train it
 - **Results in `results/`:**
   - `<run>.summary.txt`: translation, COMET-22 and chrF per language pair and direction
   - `<run>.gec_summary.txt` / `<run>.gec_scores.json`: GEC
+  - `<run>.tasks_summary.txt` / `<run>.tasks_scores.json`: APE and NER
+  - `<run>.gec_paper_summary.txt` / `<run>.gec_paper_scores.json`: the Tower paper's GEC sets
+  - `SIGNIFICANCE.md` / `significance.json`: paired bootstrap tests between the four models
+  - `PAPER_TESTS.md`: every evaluation in the Tower paper, whether we ran it, and our numbers next to the paper's
 - **Trained models:** `$TG_RUNS/<run>/final`
 
 Only the summary and score files belong in git; `.gitignore` already excludes the model outputs,
@@ -152,13 +176,21 @@ data/build_gec_it.py       MultiGEC Italian -> TowerBlocks format (train 651 / d
 data/build_gec_zh.py       MuCGEC -> token-matched Chinese training sample (2,610 pairs)
 eval/prepare_gec_data.py   GEC eval set (Italian dev + MuCGEC dev)
 eval/prepare_data.py       MT eval set (FLORES-200, WMT23, TICO-19)
+eval/prepare_tasks_data.py APE + NER and the paper's GEC eval sets (TowerEval-Data-v0.1)
 eval/generate.py           greedy decoding with the Tower chat template
 eval/score.py              COMET-22 + chrF
 eval/score_gec.py          ChERRANT (zh) + MultiGEC GLEU/ERRANT (it)
+eval/score_tasks.py        APE (COMET-22, chrF, TER) + NER (entity F1, as tower-eval)
+eval/score_gec_paper.py    the paper's GEC sets: edit rate (TER) + official ERRANT, as tower-eval
+eval/compare_tasks.py      APE, NER and paper-GEC scores of several runs side by side
+eval/significance.py       paired bootstrap tests (control vs official, it/zh vs control, ...) on all metrics
+eval/m2_counts.py          per-sentence ERRANT/ChERRANT counts, for the bootstrap
 setup/                     one-time setup steps + verify.py
 requirements/              exact package versions for both venvs
-patches/                   one-line ChERRANT patch (see below)
+patches/                   one-line patches for ChERRANT and the MultiGEC scorer (see below)
+results/                   score summaries of every run, SIGNIFICANCE.md, PAPER_TESTS.md
 results/reference/         official TowerInstruct-7B scores
+references.bib             the paper's bibliography (models, data, scorers, related work)
 ```
 
 ## Details worth knowing
@@ -177,8 +209,9 @@ results/reference/         official TowerInstruct-7B scores
 - **Tokenizer:** TowerInstruct already has the ChatML and pad tokens. `train.py` only adds tokens that
   are missing, so the embedding matrix stays the same size (32,007).
 - **Scorers:** the ChERRANT patch moves `from ltp import LTP` inside the word-level branch.
-  Character-level scores don't use LTP, so they are unchanged. The MultiGEC scorer is unmodified.
-  `score_gec.py` builds the reference M2 file it expects, using the command the upstream script has
+  Character-level scores don't use LTP, so they are unchanged. The MultiGEC patch lowercases only the
+  output filename instead of its whole path, so the scorer also works when the repo path contains
+  capitals. Its scores are unchanged too. `score_gec.py` builds the reference M2 file it expects, using the command the upstream script has
   commented out.
 - **Scorer check:** feeding the references in as outputs gives exactly 100 for Italian and F0.5 = 99.94
   for Chinese. The Chinese gap most likely comes from a newer OpenCC (traditional→simplified
@@ -192,3 +225,6 @@ results/reference/         official TowerInstruct-7B scores
 | TowerBlocks | per-source licences (see its dataset card) | no, downloaded |
 | MuCGEC | see github.com/HillZhang1999/MuCGEC | no, downloaded |
 | MultiGEC-2025 (MERLIN Italian) | research only, **no redistribution**, request access individually | **never commit it or anything built from it** |
+
+The code in this repo is under the MIT licence (see [LICENSE](LICENSE)). That licence does not cover
+the data or models above.

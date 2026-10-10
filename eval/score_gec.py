@@ -1,13 +1,3 @@
-"""Score a generate.py GEC output file (results/<run>.gec.jsonl) with the official scorers:
-
-  mucgec_dev     ChERRANT, char-level P/R/F0.5 against the gold MuCGEC dev M2 (multiple references)
-  merlin_it_dev  MultiGEC-2025 local evaluation: GLEU + ERRANT P/R/F0.5 (gleu_errant_evaluation.py)
-
-Run with the scorer venv, not tower-env:
-  $TG_SCORERS/venv/bin/python score_gec.py --hyp ../results/<run>.gec.jsonl
-The scorers are installed by setup/3_scorers.sh (paths from config.sh).
-Writes results/<run>.gec_scores.json; intermediate files (M2 etc.) go to results/gec_work/<run>/.
-"""
 import argparse
 import json
 import os
